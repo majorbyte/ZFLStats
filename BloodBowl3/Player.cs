@@ -3,35 +3,28 @@
 namespace BloodBowl3;
 
 [DebuggerDisplay("Player({Id}, {Name})")]
-public class Player : IComparable<Player>
+public class Player(int team, int id, string name) : IComparable<Player>
 {
-    public Player(int team, int id, string name)
+    public int Team { get; } = team;
+
+    public int Id { get; } = id;
+
+    public string Name { get; } = name;
+
+    public int FirstXp = -1;
+
+    public int LastXp = -1;
+
+    public int CompareTo(Player? other)
     {
-        this.Team = team;
-        this.Id = id;
-        this.Name = name;
+        return other != null ? Id.CompareTo(other.Id) : 1;
     }
 
-    public int Team { get; }
-
-    public int Id { get; }
-
-    public string Name { get; }
-
-    public int FirstXP = -1;
-
-    public int LastXP = -1;
-
-    public int CompareTo(Player other)
-    {
-        return this.Id.CompareTo(other.Id);
-    }
-
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is Player other)
         {
-            return this.CompareTo(other) == 0;
+            return CompareTo(other) == 0;
         }
 
         return false;
@@ -39,6 +32,6 @@ public class Player : IComparable<Player>
 
     public override int GetHashCode()
     {
-        return this.Id.GetHashCode();
+        return Id.GetHashCode();
     }
 }

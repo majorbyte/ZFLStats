@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.IO.Compression;
-using System.Numerics;
+﻿using System.IO.Compression;
 using System.Text.RegularExpressions;
 using System.Xml;
 
@@ -8,47 +6,39 @@ namespace BloodBowl3;
 
 public static class ReplayParser
 {
-    public static IList<Replay> GetReplays(FileSystemInfo fileOrDir, string? coachFilter = null, string? teamFilter = null)
+    public static IEnumerable<Replay> GetReplays(FileSystemInfo fileOrDir, string? coachFilter = null, string? teamFilter = null)
     {
         if (fileOrDir is DirectoryInfo dir)
         {
-            var replayTasks = new List<Task<Replay>>();
-
-            Regex coachPattern = null, teamPattern = null;
-            if (!string.IsNullOrEmpty(coachFilter))
-            {
-                coachPattern = new Regex(coachFilter, RegexOptions.IgnoreCase);
-            }
-
-            if (!string.IsNullOrEmpty(teamFilter))
-            {
-                teamPattern = new Regex(teamFilter, RegexOptions.IgnoreCase);
-            }
-
-            foreach (var path in dir.EnumerateFiles("*.bbr"))
-            {
-                var doc = LoadDocument(path);
-                var coaches = GetCoachNames(doc.DocumentElement).ToArray();
-                var teamNames = GetTeamNames(doc.DocumentElement).ToArray();
-                var teamMatches = teamPattern == null || teamNames.Any(teamPattern.IsMatch);
-                var coachMatches = coachPattern == null || coaches.Any(coachPattern.IsMatch);
-                if (teamMatches && coachMatches)
-                {
-                    replayTasks.Add(GetReplayAsync(path, doc.DocumentElement));
-                }
-            }
-
+            var replayTasks = LoadReplaysFromFolderAsync(dir, coachFilter, teamFilter).ToArray();
             Task.WaitAll(replayTasks.ToArray<Task>());
             return replayTasks.Select(t => t.Result).ToList();
         }
 
+        var doc = LoadDocument((FileInfo)fileOrDir);
+        return doc.DocumentElement != null ? new[] { GetReplayAsync((FileInfo)fileOrDir, doc.DocumentElement).Result } : new List<Replay>();
+    }
+
+    private static IEnumerable<Task<Replay>> LoadReplaysFromFolderAsync(DirectoryInfo dir, string? coachFilter = null, string? teamFilter = null)
+    {
+        var coachPattern = string.IsNullOrEmpty(coachFilter) ? null : new Regex(coachFilter, RegexOptions.IgnoreCase);
+        var teamPattern =  string.IsNullOrEmpty(teamFilter) ? null : new Regex(teamFilter, RegexOptions.IgnoreCase);
+
+        foreach (var path in dir.EnumerateFiles("*.bbr"))
         {
-            var doc = LoadDocument((FileInfo)fileOrDir);
-            return new[] { GetReplayAsync((FileInfo)fileOrDir, doc.DocumentElement).Result };
+            var doc = LoadDocument(path);
+            var coaches = GetCoachNames(doc.DocumentElement!).ToArray();
+            var teamNames = GetTeamNames(doc.DocumentElement!).ToArray();
+            var teamMatches = teamPattern == null || teamNames.Any(teamPattern.IsMatch);
+            var coachMatches = coachPattern == null || coaches.Any(coachPattern.IsMatch);
+            if (teamMatches && coachMatches)
+            {
+                yield return GetReplayAsync(path, doc.DocumentElement!);
+            }
         }
     }
 
-    public static Task<Replay> GetReplayAsync(FileInfo file, XmlElement root)
+    private static Task<Replay> GetReplayAsync(FileInfo file, XmlElement root)
     {
         return Task.Run(() => GetReplayImpl(file, root));
     }
@@ -83,70 +73,74 @@ public static class ReplayParser
 
     private static Replay GetReplayImpl(FileInfo file, XmlElement root)
     {
-        var replay = new Replay
-        {
-            File = file,
-            ClientVersion = root.SelectSingleNode("ClientVersion").InnerText,
-            ReplayRoot = root
-        };
+        var competitionName = "";
+        var homeCoach = "";
+        var awayCoach = "";
+        Team? homeTeam = null;
+        Team? awayTeam = null;
 
         if (root.SelectSingleNode("NotificationGameJoined/GameInfos") is XmlElement gameInfos)
         {
             if (gameInfos.SelectSingleNode("Competition/CompetitionInfos") is XmlElement compInfos)
             {
-                replay.CompetitionName = compInfos["Name"].InnerText.FromBase64();
+                competitionName = compInfos["Name"]!.InnerText.FromBase64();
             }
 
             if (gameInfos.SelectSingleNode("GamersInfos") is XmlElement gamersInfos)
             {
-                var coaches = gamersInfos.SelectNodes("GamerInfos/Name").Cast<XmlNode>().ToArray();
-                replay.HomeCoach = coaches[0].InnerText.FromBase64();
-                replay.VisitingCoach = coaches[1].InnerText.FromBase64();
+                var coaches = gamersInfos.SelectNodes("GamerInfos/Name")!.Cast<XmlNode>().ToArray();
+                homeCoach = coaches[0].InnerText.FromBase64();
+                awayCoach = coaches[1].InnerText.FromBase64();
 
-                var teamNameNodes = gamersInfos.SelectNodes("GamerInfos/Roster/Name").Cast<XmlElement>().ToArray();
-                replay.HomeTeam = new Team { Coach = replay.HomeCoach, Name = teamNameNodes[0].InnerText.FromBase64() };
-                replay.VisitingTeam = new Team { Coach = replay.VisitingCoach, Name = teamNameNodes[1].InnerText.FromBase64() };
+                var teamNameNodes = gamersInfos.SelectNodes("GamerInfos/Roster/Name")!.Cast<XmlElement>().ToArray();
+                homeTeam = new Team( teamNameNodes[0].InnerText.FromBase64(),  homeCoach);
+                awayTeam = new Team (teamNameNodes[1].InnerText.FromBase64(), awayCoach);
+                
             }
         }
 
-        foreach (var listTeams in root.SelectNodes("ReplayStep/BoardState/ListTeams").Cast<XmlElement>())
+
+        var teamPlayerLists = root.SelectNodes("NotificationGameJoined/InitialBoardState/ListTeams/TeamState/ListPitchPlayers")!
+                .Cast<XmlElement>().ToArray();
+
+        foreach (var playerData in teamPlayerLists[0].SelectNodes("PlayerState/Data")!.Cast<XmlElement>())
         {
-            var teamPlayerLists = listTeams.SelectNodes("TeamState/ListPitchPlayers").Cast<XmlElement>().ToArray();
-
-            foreach (var playerData in teamPlayerLists[0].SelectNodes("PlayerState/Data").Cast<XmlElement>())
-            {
-                var player = GetPlayer(0, playerData);
-                replay.HomeTeam.Players.TryAdd(player.Id, player);
-            }
-
-            foreach (var playerData in teamPlayerLists[1].SelectNodes("PlayerState/Data").Cast<XmlElement>())
-            {
-                var player = GetPlayer(1, playerData);
-                replay.VisitingTeam.Players.TryAdd(player.Id, player);
-            }
+            var player = GetPlayer(0, playerData);
+            homeTeam!.Players.TryAdd(player.Id, player);
         }
 
-        return replay;
-    }
-
-    private static Player GetPlayer(int team, XmlElement playerData)
-    {
-        return new Player(team, playerData["Id"].InnerText.ParseInt(), playerData["Name"].InnerText.FromBase64());
-    }
-
-    private static IEnumerable<string> GetTeamNames(XmlElement doc)
-    {
-        foreach (var node in doc.SelectNodes("NotificationGameJoined/GameInfos/GamersInfos/GamerInfos/Roster/Name").Cast<XmlElement>())
+        foreach (var playerData in teamPlayerLists[1].SelectNodes("PlayerState/Data")!.Cast<XmlElement>())
         {
-            yield return node.InnerText.FromBase64();
+            var player = GetPlayer(1, playerData);
+            awayTeam!.Players.TryAdd(player.Id, player);
         }
+
+
+        return new Replay
+        {
+            File = file,
+            ClientVersion = root.SelectSingleNode("ClientVersion")!.InnerText,
+            ReplayRoot = root,
+            CompetitionName = competitionName,
+            HomeCoach = homeCoach,
+            AwayCoach = awayCoach,
+            HomeTeam = homeTeam!,
+            AwayTeam = awayTeam!
+        };
     }
 
-    private static IEnumerable<string> GetCoachNames(XmlElement doc)
+    private static Player GetPlayer(int team, XmlNode playerData)
     {
-        foreach (var node in doc.SelectNodes("NotificationGameJoined/GameInfos/GamersInfos/GamerInfos/Name").Cast<XmlElement>())
-        {
-            yield return node.InnerText.FromBase64();
-        }
+        return new Player(team, playerData["Id"]!.InnerText.ParseInt(), playerData["Name"]!.InnerText.FromBase64());
+    }
+
+    private static IEnumerable<string> GetTeamNames(XmlNode doc)
+    {
+        return doc.SelectNodes("NotificationGameJoined/GameInfos/GamersInfos/GamerInfos/Roster/Name")!.Cast<XmlElement>().Select(node => node.InnerText.FromBase64());
+    }
+
+    private static IEnumerable<string> GetCoachNames(XmlNode doc)
+    {
+        return doc.SelectNodes("NotificationGameJoined/GameInfos/GamersInfos/GamerInfos/Name")!.Cast<XmlElement>().Select(node => node.InnerText.FromBase64());
     }
 }

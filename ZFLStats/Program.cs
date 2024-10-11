@@ -344,14 +344,14 @@ public class Program
 
             var properties = typeof(ZFLPlayerStats).GetProperties();
 
-            csv?.WriteLine($"{replay.HomeTeam.Name} vs {replay.VisitingTeam.Name}");
+            csv?.WriteLine($"{replay.HomeTeam.Name} vs {replay.AwayTeam.Name}");
             csv?.WriteLine($" Fan attendance home: {fanAttendanceHome}");
             csv?.WriteLine($" Fan attendance away: {fanAttendanceAway}");
             csv?.WriteLine($"Player;{string.Join(';', properties.Select(p => p.Name))}");
 
-            if (!silent) Console.WriteLine($"{replay.HomeTeam.Name} vs {replay.VisitingTeam.Name}");
+            if (!silent) Console.WriteLine($"{replay.HomeTeam.Name} vs {replay.AwayTeam.Name}");
             if (!silent) Console.WriteLine($" Fan attendance: {fanAttendanceHome} / {fanAttendanceAway}");
-            foreach (var playerId in replay.HomeTeam.Players.Keys.Concat(replay.VisitingTeam.Players.Keys))
+            foreach (var playerId in replay.HomeTeam.Players.Keys.Concat(replay.AwayTeam.Players.Keys))
             {
                 var playerStats = GetStatsFor(playerId);
                 if (!silent) Console.WriteLine($"  {replay.GetPlayer(playerId).Name} (id={playerId}):");

@@ -4,29 +4,24 @@ namespace BloodBowl3;
 
 public class Replay
 {
-    public FileInfo File { get; set; }
+    public required FileInfo File { get; set; }
 
-    public string ClientVersion { get; set; }
+    public required string ClientVersion { get; set; }
 
-    public string HomeCoach { get; set; }
+    public required string HomeCoach { get; set; }
 
-    public string VisitingCoach { get; set; }
+    public required string AwayCoach { get; set; }
 
-    public Team HomeTeam { get; set; }
+    public required Team HomeTeam { get; set; }
 
-    public Team VisitingTeam { get; set; }
+    public required Team AwayTeam { get; set; }
 
-    public string CompetitionName { get; set; }
+    public required string CompetitionName { get; set; }
 
-    public XmlElement ReplayRoot { get; set; }
+    public required XmlElement ReplayRoot { get; set; }
 
     public Player GetPlayer(int id)
     {
-        if (this.HomeTeam.Players.TryGetValue(id, out var p))
-        {
-            return p;
-        }
-
-        return this.VisitingTeam.Players[id];
+        return HomeTeam.Players.TryGetValue(id, out var p) ? p : AwayTeam.Players[id];
     }
 }
