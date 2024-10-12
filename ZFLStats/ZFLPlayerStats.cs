@@ -1,7 +1,10 @@
 ﻿namespace ZFLStats;
 
-public class ZFLPlayerStats
+public class ZFLPlayerStats(int id, string lobbyId, string name)
 {
+    public int PlayerId {get;set;} = id;
+    public string LobbyId {get;set;} = lobbyId;
+    public string Name {get;set;} = name;
     public int TouchdownsScored { get; set; }
 
     public int CasInflicted { get; set; }
@@ -34,25 +37,25 @@ public class ZFLPlayerStats
 
     internal bool Mvp { get; set; }
 
-    internal int ExpectedSPP => this.TouchdownsScored * 3 + this.CasInflicted * 2 + this.PassCompletions + (this.Mvp ? 4 : 0);
+    internal int ExpectedSPP => TouchdownsScored * 3 + CasInflicted * 2 + PassCompletions + (Mvp ? 4 : 0);
 
     public void PrintToConsole(int indent)
     {
-        Print(indent, nameof(this.TouchdownsScored), this.TouchdownsScored);
-        Print(indent, nameof(this.CasInflicted), this.CasInflicted);
-        Print(indent, nameof(this.CasSustained), this.CasSustained);
-        Print(indent, nameof(this.PassCompletions), this.PassCompletions);
-        Print(indent, nameof(this.FoulsInflicted), this.FoulsInflicted);
-        Print(indent, nameof(this.FoulsSustained), this.FoulsSustained);
-        Print(indent, nameof(this.SppEarned), this.SppEarned);
-        Print(indent, nameof(this.Sacks), this.Sacks);
-        Print(indent, nameof(this.Kills), this.Kills);
-        Print(indent, nameof(this.SurfsInflicted), this.SurfsInflicted);
-        Print(indent, nameof(this.SurfsSustained), this.SurfsSustained);
-        Print(indent, nameof(this.Expulsions), this.Expulsions);
-        Print(indent, nameof(this.DodgeTurnovers), this.DodgeTurnovers);
-        Print(indent, nameof(this.DubskullsRolled), this.DubskullsRolled);
-        Print(indent, nameof(this.ArmorRollsSustained), this.ArmorRollsSustained);
+        Print(indent, nameof(TouchdownsScored), TouchdownsScored);
+        Print(indent, nameof(CasInflicted), CasInflicted);
+        Print(indent, nameof(CasSustained), CasSustained);
+        Print(indent, nameof(PassCompletions), PassCompletions);
+        Print(indent, nameof(FoulsInflicted), FoulsInflicted);
+        Print(indent, nameof(FoulsSustained), FoulsSustained);
+        Print(indent, nameof(SppEarned), SppEarned);
+        Print(indent, nameof(Sacks), Sacks);
+        Print(indent, nameof(Kills), Kills);
+        Print(indent, nameof(SurfsInflicted), SurfsInflicted);
+        Print(indent, nameof(SurfsSustained), SurfsSustained);
+        Print(indent, nameof(Expulsions), Expulsions);
+        Print(indent, nameof(DodgeTurnovers), DodgeTurnovers);
+        Print(indent, nameof(DubskullsRolled), DubskullsRolled);
+        Print(indent, nameof(ArmorRollsSustained), ArmorRollsSustained);
     }
 
     private static void Print(int indent, string text, int value)

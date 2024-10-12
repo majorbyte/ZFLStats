@@ -100,21 +100,22 @@ public static class ReplayParser
         }
 
 
-        var teamPlayerLists = root.SelectNodes("NotificationGameJoined/InitialBoardState/ListTeams/TeamState/ListPitchPlayers")!
+        var teamPlayerLists = root.SelectNodes("EndGame/RulesEventGameFinished/MatchResult/GamerResults/GamerResult/TeamResult/PlayerResults")!
                 .Cast<XmlElement>().ToArray();
 
-        foreach (var playerData in teamPlayerLists[0].SelectNodes("PlayerState/Data")!.Cast<XmlElement>())
+        foreach (var playerData in teamPlayerLists[0].SelectNodes("PlayerResult/PlayerData")!.Cast<XmlElement>())
         {
             var player = GetPlayer(0, playerData);
             homeTeam!.Players.TryAdd(player.Id, player);
         }
 
-        foreach (var playerData in teamPlayerLists[1].SelectNodes("PlayerState/Data")!.Cast<XmlElement>())
+        foreach (var playerData in teamPlayerLists[1].SelectNodes("PlayerResult/PlayerData")!.Cast<XmlElement>())
         {
             var player = GetPlayer(1, playerData);
             awayTeam!.Players.TryAdd(player.Id, player);
         }
 
+        //todo starplayers
 
         return new Replay
         {
@@ -131,7 +132,7 @@ public static class ReplayParser
 
     private static Player GetPlayer(int team, XmlNode playerData)
     {
-        return new Player(team, playerData["Id"]!.InnerText.ParseInt(), playerData["Name"]!.InnerText.FromBase64());
+        return new Player(team, playerData["Id"]!.InnerText.ParseInt(), playerData["Name"]!.InnerText.FromBase64(),playerData["LobbyId"] != null ? playerData["LobbyId"]!.InnerText.FromBase64() : "");
     }
 
     private static IEnumerable<string> GetTeamNames(XmlNode doc)

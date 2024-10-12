@@ -3,11 +3,12 @@
 namespace BloodBowl3;
 
 [DebuggerDisplay("Player({Id}, {Name})")]
-public class Player(int team, int id, string name) : IComparable<Player>
+public class Player(int team, int id, string name, string lobbyId) : IComparable<Player>
 {
     public int Team { get; } = team;
 
     public int Id { get; } = id;
+    public string LobbyId { get; } = lobbyId;
 
     public string Name { get; } = name;
 
