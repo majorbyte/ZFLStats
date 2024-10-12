@@ -9,7 +9,7 @@ using BloodBowl3;
 
 public class Program
 {
-    private static readonly Dictionary<int, ZFLPlayerStats> Stats = [];
+    private static Dictionary<int, ZFLPlayerStats> Stats = [];
 
     private class OutputArguments
     {
@@ -154,6 +154,7 @@ public class Program
 
     private static void InitPlayerStats(Replay replay)
     {
+        Stats = [];
         foreach(var player in replay.HomeTeam.Players) Stats.TryAdd(player.Value.Id, new ZFLPlayerStats(player.Value.Id, player.Value.LobbyId, player.Value.Name));
         foreach(var player in replay.AwayTeam.Players) Stats.TryAdd(player.Value.Id, new ZFLPlayerStats(player.Value.Id, player.Value.LobbyId, player.Value.Name));
     }
