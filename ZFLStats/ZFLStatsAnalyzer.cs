@@ -13,7 +13,7 @@ internal class ZFLStatsAnalyzer(Replay replay)
 
     public IEnumerable<ZFLPlayerStats> HomeTeamStats => replay.HomeTeam.Players.Keys.OrderBy(id => id).Select(this.GetStatsFor);
 
-    public IEnumerable<ZFLPlayerStats> VisitingTeamStats => replay.VisitingTeam.Players.Keys.OrderBy(id => id).Select(this.GetStatsFor);
+    public IEnumerable<ZFLPlayerStats> VisitingTeamStats => replay.AwayTeam.Players.Keys.OrderBy(id => id).Select(this.GetStatsFor);
 
     public int HomeFanAttendance => replay.ReplayRoot.SelectSingleNode("ReplayStep/EventFanFactor/HomeRoll/Dice/Die/Value")!.InnerText.ParseInt();
 

@@ -17,12 +17,12 @@ public class Player(int team, int id, string name, string? lobbyId) : IComparabl
 
     public int LastXP = -1;
 
-    public int CompareTo(Player other)
+    public int CompareTo(Player? other)
     {
-        return this.Id.CompareTo(other.Id);
+        return other != null ? this.Id.CompareTo(other.Id) : 1;
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is Player other)
         {

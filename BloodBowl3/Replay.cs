@@ -8,25 +8,17 @@ public class Replay(FileInfo file, string clientVersion, XmlElement root)
 
     public string ClientVersion => clientVersion;
 
-    public string HomeCoach { get; set; }
+    public required string HomeCoach { get; set; }
 
-    public string VisitingCoach { get; set; }
+    public required string AwayCoach { get; set; }
 
-    public Team HomeTeam { get; set; }
+    public required Team HomeTeam { get; set; }
 
-    public Team VisitingTeam { get; set; }
+    public required Team AwayTeam { get; set; }
 
-    public string CompetitionName { get; set; }
+    public required string CompetitionName { get; set; }
 
     public XmlElement ReplayRoot => root;
 
-    public Player GetPlayer(int id)
-    {
-        if (this.HomeTeam.Players.TryGetValue(id, out var p))
-        {
-            return p;
-        }
-
-        return this.VisitingTeam.Players[id];
-    }
+    public Player GetPlayer (int id) => this.HomeTeam.Players.TryGetValue(id, out var p) ? p : this.AwayTeam.Players[id];
 }
